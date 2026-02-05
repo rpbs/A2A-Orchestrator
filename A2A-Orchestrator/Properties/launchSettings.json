@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "A2A-Orchestrator": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
