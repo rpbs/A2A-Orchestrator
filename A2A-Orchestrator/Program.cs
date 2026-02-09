@@ -25,13 +25,14 @@ var apiKey = configRoot["A2A-Orchestrator:ApiKey"] ?? throw new ArgumentExceptio
 var modelId = configRoot["A2A-Orchestrator:ModelId"] ?? "gpt-4.1";
 var agentUrls = configRoot["A2A-Orchestrator:AgentUrls"] ?? "http://localhost:5000/;http://localhost:5001/;http://localhost:5002/";
 
-// Create the Host agent
+// hosted agent que vai orquestrar o uso dos outros agentes.
 var hostAgent = new HostClientAgent(loggerFactory, modelId, apiKey, agentUrls!.Split(";"));
 
-// passo 1: Retrieve agents from remote and convert to tools
+// passo 1: recuperar os agentes remotos (que já estão rodando e expondo suas capacidades via API) para que o agente orquestrador possa usá-los
 IEnumerable<AIAgent> agents = await hostAgent.RetrieveAgentsFromRemoteAsync();
 
-var tools = hostAgent.ConvertAgentsToTools();
+// passo 2: convertendo agents em tools para que o agente orquestrador possa usá-los
+List<AITool> tools = hostAgent.ConvertAgentsToTools();
 
 // passo 2: Create orchestrator agent with tools
 AIAgent mainAgent = hostAgent.CreateOrchestratorAgent(tools);
@@ -43,6 +44,7 @@ try
     while (true)
     {
         // Get user message
+        Console.ForegroundColor = ConsoleColor.Yellow;
         Console.Write("\nUser (:q or quit to exit): ");
         string? message = Console.ReadLine();
         if (string.IsNullOrWhiteSpace(message))
@@ -56,12 +58,22 @@ try
             break;
         }
 
+        Console.ForegroundColor = ConsoleColor.Magenta;
+
+        Console.WriteLine();
+        Console.WriteLine("Wait...");
+        Console.WriteLine();
+
         var agentResponse = await mainAgent.RunAsync(message, session, cancellationToken: CancellationToken.None);
-        foreach (var chatMessage in agentResponse.Messages)
+
+        foreach (Microsoft.Extensions.AI.ChatMessage chatMessage in agentResponse.Messages)
         {
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine($"\nAgent: {chatMessage.Text}");
-            Console.ResetColor();
+            if (!string.IsNullOrEmpty(chatMessage.Text))
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine($"\nAgent: {chatMessage.Text}");
+                Console.ResetColor();
+            }
         }
     }
 }
