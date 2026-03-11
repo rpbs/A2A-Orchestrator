@@ -21,12 +21,12 @@ IConfigurationRoot configRoot = new ConfigurationBuilder()
     .AddUserSecrets(Assembly.GetExecutingAssembly())
     .Build();
 
-var apiKey = configRoot["A2A-Orchestrator:ApiKey"] ?? throw new ArgumentException("A2A-Orchestrator:ApiKey must be provided");
-var modelId = configRoot["A2A-Orchestrator:ModelId"] ?? "gpt-4.1";
-var agentUrls = configRoot["A2A-Orchestrator:AgentUrls"] ?? "http://localhost:5000/;http://localhost:5001/;http://localhost:5002/";
+var apiKey = configRoot["A2A-Orchestrator:ApiKey"];
+var modelId = configRoot["A2A-Orchestrator:ModelId"];
+var agentUrls = configRoot["A2A-Orchestrator:AgentUrls"];
 
 // hosted agent que vai orquestrar o uso dos outros agentes.
-var hostAgent = new HostClientAgent(loggerFactory, modelId, apiKey, agentUrls!.Split(";"));
+var hostAgent = new HostClientAgent(loggerFactory, modelId!, apiKey!, agentUrls!.Split(";"));
 
 // passo 1: recuperar os agentes remotos (que já estão rodando e expondo suas capacidades via API) para que o agente orquestrador possa usá-los
 IEnumerable<AIAgent> agents = await hostAgent.RetrieveAgentsFromRemoteAsync();
@@ -34,7 +34,7 @@ IEnumerable<AIAgent> agents = await hostAgent.RetrieveAgentsFromRemoteAsync();
 // passo 2: convertendo agents em tools para que o agente orquestrador possa usá-los
 List<AITool> tools = hostAgent.ConvertAgentsToTools();
 
-// passo 2: Create orchestrator agent with tools
+// passo 3: create orchestrator agent with tools
 AIAgent mainAgent = hostAgent.CreateOrchestratorAgent(tools);
 
 AgentSession session = await mainAgent.GetNewSessionAsync(CancellationToken.None);
